@@ -139,10 +139,10 @@ endif()
 
 set_target_properties(librw
     PROPERTIES
-        C_STANDARD 11
+        C_STANDARD 17
         C_EXTENSIONS OFF
         C_STANDARD_REQUIRED ON
-        CXX_STANDARD 11
+        CXX_STANDARD 17
         CXX_EXTENSIONS OFF
         CXX_STANDARD_REQUIRED ON
         PREFIX ""
@@ -150,26 +150,37 @@ set_target_properties(librw
 
 if(LIBRW_PLATFORM_GL3)
     if (LIBRW_GL3_GFXLIB STREQUAL "GLFW")
-        if (NOT TARGET glfw)
-            find_package(glfw3 REQUIRED)
+        if (CMAKE_SYSTEM_NAME MATCHES "Emscripten")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --use-port=contrib.glfw3")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --use-port=contrib.glfw3")
+        else ()
+            if (NOT TARGET glfw)
+                find_package(glfw3 REQUIRED)
+            endif()
+            target_compile_definitions(librw PUBLIC LIBRW_GLFW)
+            target_link_libraries(librw
+                PUBLIC
+                    glfw
+                )
         endif()
         target_compile_definitions(librw PUBLIC LIBRW_GLFW)
-        target_link_libraries(librw
-            PUBLIC
-                glfw
-            )
     elseif (LIBRW_GL3_GFXLIB STREQUAL "SDL2")
-        if (NOT TARGET SDL2::SDL2)
-            find_package(SDL2 CONFIG)
+        if (CMAKE_SYSTEM_NAME MATCHES "Emscripten")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --use-port=sdl2")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --use-port=sdl2")
+        else ()
             if (NOT TARGET SDL2::SDL2)
-                find_package(SDL2 MODULE REQUIRED)
+                find_package(SDL2 CONFIG)
+                if (NOT TARGET SDL2::SDL2)
+                    find_package(SDL2 MODULE REQUIRED)
+                endif()
             endif()
-        endif()
+            target_link_libraries(librw
+                PUBLIC
+                    SDL2::SDL2
+            )
+        endif ()
         target_compile_definitions(librw PUBLIC LIBRW_SDL2)
-        target_link_libraries(librw
-            PUBLIC
-                SDL2::SDL2
-        )
     elseif (LIBRW_GL3_GFXLIB STREQUAL "SDL3")
         find_package(SDL3 CONFIG REQUIRED)
         target_compile_definitions(librw PUBLIC LIBRW_SDL3)

@@ -15,7 +15,12 @@
 #include "rwgl3.h"
 #include "rwgl3shader.h"
 #include "rwgl3impl.h"
-
+#if __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#ifdef LIBRW_GLFW
+#include <GLFW/emscripten_glfw3.h>
+#endif
+#endif
 #define PLUGIN_ID 0
 
 namespace rw {
@@ -1905,7 +1910,9 @@ startGLFW(void)
 		glfwWindowHint(GLFW_CLIENT_API, profiles[i].gl);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, profiles[i].major);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, profiles[i].minor);
-
+#if __EMSCRIPTEN__
+		emscripten_glfw_set_next_window_canvas_selector("#canvas");
+#endif
 		if(mode->flags & VIDEOMODEEXCLUSIVE)
 			win = glfwCreateWindow(mode->mode.width, mode->mode.height, glGlobals.winTitle, glGlobals.monitor, nil);
 		else
