@@ -13,12 +13,12 @@
 #ifdef RW_OPENGL
 
 #include "rwgl3.h"
-#include "rwgl3shader.h"
 #include "rwgl3impl.h"
+#include "rwgl3shader.h"
 #if __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #ifdef LIBRW_GLFW
-#include <GLFW/emscripten_glfw3.h>
+#include <GLFW/glfw3.h>
 #endif
 #endif
 #define PLUGIN_ID 0
@@ -97,7 +97,11 @@ const char *shaderDecl100es =
 "precision highp float;\n"
 "precision highp int;\n";
 const char *shaderDecl310es =
+#if __EMSCRIPTEN__
+"#version 300 es\n"
+#else
 "#version 310 es\n"
+#endif
 "#define VSIN(index) layout(location = index) in\n"
 "#define VSOUT out\n"
 "#define FSIN in\n"
@@ -1879,9 +1883,11 @@ static struct {
 	int gl;
 	int major, minor;
 } profiles[] = {
+#if !__EMSCRIPTEN__
 	{ GLFW_OPENGL_API, 3, 3 },
 	{ GLFW_OPENGL_API, 2, 1 },
 	{ GLFW_OPENGL_ES_API, 3, 1 },
+#endif
 	{ GLFW_OPENGL_ES_API, 2, 0 },
 	{ 0, 0, 0 },
 };
@@ -1895,11 +1901,12 @@ startGLFW(void)
 	mode = &glGlobals.modes[glGlobals.currentMode];
 
 	glfwSetErrorCallback(glfwerr);
+#if !__EMSCRIPTEN__
 	glfwWindowHint(GLFW_RED_BITS, mode->mode.redBits);
 	glfwWindowHint(GLFW_GREEN_BITS, mode->mode.greenBits);
 	glfwWindowHint(GLFW_BLUE_BITS, mode->mode.blueBits);
 	glfwWindowHint(GLFW_REFRESH_RATE, mode->mode.refreshRate);
-	
+#endif
 	// GLX will round up to 2x or 4x if you ask for multisampling on with 1 sample
 	// So only apply the SAMPLES hint if we actually want multisampling
 	if (glGlobals.numSamples > 1)
@@ -1907,12 +1914,21 @@ startGLFW(void)
 
 	int i;
 	for(i = 0; profiles[i].gl; i++){
+#if __EMSCRIPTEN__
+		glfwDefaultWindowHints();
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+		//glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
+		//emscripten_glfw_set_next_window_canvas_selector("#canvas");
+		printf("init glfw window %d x %d '%s'\n", glGlobals.winWidth, glGlobals.winHeight, glGlobals.winTitle);
+		win = glfwCreateWindow(glGlobals.winWidth, glGlobals.winHeight, glGlobals.winTitle, nil, nil);
+		gl3Caps.glversion = profiles[i].major*10 + profiles[i].minor;
+		gl3Caps.gles = true;
+		break;
+#else
 		glfwWindowHint(GLFW_CLIENT_API, profiles[i].gl);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, profiles[i].major);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, profiles[i].minor);
-#if __EMSCRIPTEN__
-		emscripten_glfw_set_next_window_canvas_selector("#canvas");
-#endif
 		if(mode->flags & VIDEOMODEEXCLUSIVE)
 			win = glfwCreateWindow(mode->mode.width, mode->mode.height, glGlobals.winTitle, glGlobals.monitor, nil);
 		else
@@ -1922,6 +1938,7 @@ startGLFW(void)
 			gl3Caps.glversion = profiles[i].major*10 + profiles[i].minor;
 			break;
 		}
+#endif
 	}
 	if(win == nil){
 		RWERROR((ERR_GENERAL, "glfwCreateWindow() failed"));

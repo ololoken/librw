@@ -5,7 +5,11 @@
 #elif defined(LIBRW_SDL3)
 #include <SDL3/SDL.h>
 #elif defined(LIBRW_GLFW)
+#if __EMSCRIPTEN__
 #include <GLFW/glfw3.h>
+#else
+#include <GLFW/glfw3.h>
+#endif
 #else
 not implemented
 #endif
