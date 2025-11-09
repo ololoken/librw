@@ -1584,7 +1584,9 @@ int gladLoadGLES2Loader(GLADloadproc load, int requestedVersion) {
 	load_GL_ES_VERSION_3_0(load);
 	load_GL_ES_VERSION_3_1(load);
 
+#if !__EMSCRIPTEN__
 	if (!find_extensionsGLES2()) return 0;
 	load_GL_KHR_debug(load);
+#endif
 	return GLVersion.major != 0 || GLVersion.minor != 0;
 }

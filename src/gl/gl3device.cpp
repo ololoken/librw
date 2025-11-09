@@ -1887,8 +1887,10 @@ static struct {
 	{ GLFW_OPENGL_API, 3, 3 },
 	{ GLFW_OPENGL_API, 2, 1 },
 	{ GLFW_OPENGL_ES_API, 3, 1 },
-#endif
 	{ GLFW_OPENGL_ES_API, 2, 0 },
+#else
+	{ GLFW_OPENGL_ES_API, 3, 0 },
+#endif
 	{ 0, 0, 0 },
 };
 
@@ -1914,20 +1916,12 @@ startGLFW(void)
 
 	int i;
 	for(i = 0; profiles[i].gl; i++){
-#if __EMSCRIPTEN__
-		glfwDefaultWindowHints();
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-		//glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
-		//emscripten_glfw_set_next_window_canvas_selector("#canvas");
-		printf("init glfw window %d x %d '%s'\n", glGlobals.winWidth, glGlobals.winHeight, glGlobals.winTitle);
-		win = glfwCreateWindow(glGlobals.winWidth, glGlobals.winHeight, glGlobals.winTitle, nil, nil);
-		gl3Caps.glversion = profiles[i].major*10 + profiles[i].minor;
-		gl3Caps.gles = true;
-		break;
-#else
 		glfwWindowHint(GLFW_CLIENT_API, profiles[i].gl);
+#if __EMSCRIPTEN__
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+#else
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, profiles[i].major);
+#endif
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, profiles[i].minor);
 		if(mode->flags & VIDEOMODEEXCLUSIVE)
 			win = glfwCreateWindow(mode->mode.width, mode->mode.height, glGlobals.winTitle, glGlobals.monitor, nil);
@@ -1938,7 +1932,6 @@ startGLFW(void)
 			gl3Caps.glversion = profiles[i].major*10 + profiles[i].minor;
 			break;
 		}
-#endif
 	}
 	if(win == nil){
 		RWERROR((ERR_GENERAL, "glfwCreateWindow() failed"));
@@ -1974,6 +1967,17 @@ stopGLFW(void)
 not implemented
 #endif
 
+bool hasext(const char *exts, const char *ext) // from cube2, zlib licensed
+{
+	int len = strlen(ext);
+	if(len) for(const char *cur = exts; (cur = strstr(cur, ext)); cur += len)
+	{
+		if((cur == exts || cur[-1] == ' ') && (cur[len] == ' ' || !cur[len])) return true;
+	}
+	return false;
+}
+
+
 static int
 initOpenGL(void)
 {
@@ -1993,8 +1997,9 @@ initOpenGL(void)
 //		printf("%d %s\n", i, ext);
 	}
 */
-	gl3Caps.dxtSupported = !!GLAD_GL_EXT_texture_compression_s3tc;
-	gl3Caps.astcSupported = !!GLAD_GL_KHR_texture_compression_astc_ldr;
+	const char *exts = (const char *)glGetString(GL_EXTENSIONS);
+	gl3Caps.dxtSupported = hasext(exts, "GL_EXT_texture_compression_s3tc");
+	gl3Caps.astcSupported = hasext(exts, "GL_KHR_texture_compression_astc_ldr");
 
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl3Caps.maxAnisotropy);
 
@@ -2358,10 +2363,17 @@ deviceSystemGLFW(DeviceReq req, void *arg, int32 n)
 
 	case DEVICEGETVIDEOMODEINFO:
 		rwmode = (VideoMode*)arg;
+#if __EMSCRIPTEN__
+		rwmode->width = 1280;
+		rwmode->height = 960;
+		rwmode->depth = 32;
+		rwmode->flags = VIDEOMODEEXCLUSIVE;
+#else
 		rwmode->width = glGlobals.modes[n].mode.width;
 		rwmode->height = glGlobals.modes[n].mode.height;
 		rwmode->depth = glGlobals.modes[n].depth;
 		rwmode->flags = glGlobals.modes[n].flags;
+#endif
 		return 1;
 
 	case DEVICEGETMAXMULTISAMPLINGLEVELS:
