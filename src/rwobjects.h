@@ -607,7 +607,7 @@ struct World;
 struct Atomic
 {
 	PLUGINBASE
-	typedef void (*RenderCB)(Atomic *atomic);
+	typedef Atomic* (*RenderCB)(Atomic *atomic);
 	enum { ID = 1 };
 	enum {
 	// flags
@@ -642,7 +642,8 @@ struct Atomic
 	}
 	Frame *getFrame(void) const { return (Frame*)this->object.object.parent; }
 	static Atomic *fromClump(LLLink *lnk){
-		return LLLinkGetData(lnk, Atomic, inClump); }
+		return LLLinkGetData(lnk, Atomic, inClump);
+	}
 	void setGeometry(Geometry *geo, uint32 flags);
 	Sphere *getWorldBoundingSphere(void);
 	ObjPipeline *getPipeline(void);
@@ -661,7 +662,7 @@ struct Atomic
 	bool streamWriteClump(Stream *stream, FrameList_ *frmlst);
 	uint32 streamGetSize(void);
 
-	static void defaultRenderCB(Atomic *atomic);
+	static Atomic* defaultRenderCB(Atomic *atomic);
 };
 
 void registerAtomicRightsPlugin(void);

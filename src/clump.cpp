@@ -621,10 +621,11 @@ Atomic::uninstance(void)
 	this->geometry->flags &= ~Geometry::NATIVE;
 }
 
-void
+Atomic*
 Atomic::defaultRenderCB(Atomic *atomic)
 {
 	atomic->getPipeline()->render(atomic);
+	return atomic;
 }
 
 // Atomic Rights plugin
