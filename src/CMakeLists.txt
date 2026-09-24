@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.10)
 add_library(librw
     "${PROJECT_SOURCE_DIR}/args.h"
     "${PROJECT_SOURCE_DIR}/rw.h"

@@ -2367,17 +2367,15 @@ deviceSystemGLFW(DeviceReq req, void *arg, int32 n)
 
 	case DEVICEGETVIDEOMODEINFO:
 		rwmode = (VideoMode*)arg;
-#if __EMSCRIPTEN__
-		rwmode->width = 1280;
-		rwmode->height = 960;
-		rwmode->depth = 32;
-		rwmode->flags = VIDEOMODEEXCLUSIVE;
+#ifdef __EMSCRIPTEN__
+		rwmode->width = EM_ASM_INT({ return document.querySelector('canvas').getBoundingClientRect().width });
+		rwmode->height = EM_ASM_INT({ return document.querySelector('canvas').getBoundingClientRect().height });
 #else
 		rwmode->width = glGlobals.modes[n].mode.width;
 		rwmode->height = glGlobals.modes[n].mode.height;
+#endif
 		rwmode->depth = glGlobals.modes[n].depth;
 		rwmode->flags = glGlobals.modes[n].flags;
-#endif
 		return 1;
 
 	case DEVICEGETMAXMULTISAMPLINGLEVELS:
